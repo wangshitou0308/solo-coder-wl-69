@@ -1,0 +1,115 @@
+/** @type {import('tailwindcss').Config} */
+
+export default {
+  darkMode: "class",
+  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
+  theme: {
+    container: {
+      center: true,
+      padding: {
+        DEFAULT: '1rem',
+        sm: '2rem',
+        lg: '4rem',
+        xl: '5rem',
+        '2xl': '6rem',
+      },
+    },
+    extend: {
+      colors: {
+        cinnabar: {
+          50: '#fef2f3',
+          100: '#fde2e5',
+          200: '#fcc9cf',
+          300: '#f9a2ac',
+          400: '#f36d7e',
+          500: '#C8102E',
+          600: '#a40d26',
+          700: '#890c22',
+          800: '#730e21',
+          900: '#621022',
+        },
+        rice: {
+          50: '#fbf8f1',
+          100: '#F5EFE0',
+          200: '#ebe0c4',
+          300: '#dfcc9f',
+          400: '#d1b176',
+          500: '#c49957',
+          600: '#b4824b',
+          700: '#956640',
+          800: '#785339',
+          900: '#634531',
+        },
+        ink: {
+          50: '#f6f6f6',
+          100: '#e7e7e7',
+          200: '#d1d1d1',
+          300: '#b0b0b0',
+          400: '#888888',
+          500: '#6d6d6d',
+          600: '#5d5d5d',
+          700: '#4f4f4f',
+          800: '#2C2C2C',
+          900: '#1a1a1a',
+        },
+        jade: {
+          50: '#f0f7f1',
+          100: '#dbeedf',
+          200: '#b9ddc1',
+          300: '#8bc497',
+          400: '#59a56b',
+          500: '#3A7D44',
+          600: '#2d6436',
+          700: '#26502d',
+          800: '#204126',
+          900: '#1b3621',
+        },
+        gold: {
+          50: '#fdf9ed',
+          100: '#faf0cb',
+          200: '#f5df8f',
+          300: '#eec855',
+          400: '#e6b12c',
+          500: '#B8860B',
+          600: '#9a6408',
+          700: '#7c4a0a',
+          800: '#663c10',
+          900: '#553212',
+        },
+      },
+      fontFamily: {
+        serif: ['"Noto Serif SC"', 'serif'],
+        sans: ['"Noto Sans SC"', 'sans-serif'],
+      },
+      backgroundImage: {
+        'paper-texture': "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E\")",
+        'cloud-pattern': "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Cpath d='M30 10c-5 0-8 3-8 7 0 2 1 4 3 5-4 1-7 4-7 8s3 7 7 7h20c4 0 7-3 7-7s-3-7-7-7c2-1 3-3 3-5 0-4-3-7-8-7-2 0-4 1-5 2-1-1-3-2-5-2z' fill='%23C8102E' fill-opacity='0.03'/%3E%3C/svg%3E\")",
+      },
+      boxShadow: {
+        'chinese': '0 4px 20px -2px rgba(200, 16, 46, 0.1), 0 2px 6px -2px rgba(44, 44, 44, 0.06)',
+        'chinese-lg': '0 10px 40px -4px rgba(200, 16, 46, 0.15), 0 4px 12px -4px rgba(44, 44, 44, 0.1)',
+        'gold': '0 0 0 1px rgba(184, 134, 11, 0.3), 0 4px 12px -2px rgba(184, 134, 11, 0.15)',
+      },
+      keyframes: {
+        'scroll-reveal': {
+          '0%': { transform: 'translateY(20px)', opacity: '0' },
+          '100%': { transform: 'translateY(0)', opacity: '1' },
+        },
+        'stamp': {
+          '0%': { transform: 'scale(1.5) rotate(-10deg)', opacity: '0' },
+          '60%': { transform: 'scale(0.95) rotate(2deg)', opacity: '1' },
+          '100%': { transform: 'scale(1) rotate(-3deg)', opacity: '1' },
+        },
+        'wave-bar': {
+          '0%, 100%': { transform: 'scaleY(0.3)' },
+          '50%': { transform: 'scaleY(1)' },
+        },
+      },
+      animation: {
+        'scroll-reveal': 'scroll-reveal 0.6s ease-out forwards',
+        'stamp': 'stamp 0.5s ease-out forwards',
+      },
+    },
+  },
+  plugins: [],
+};
