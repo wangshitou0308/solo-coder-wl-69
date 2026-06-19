@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useMemo, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Grid3X3 } from 'lucide-react';
 import Layout from '@/components/Layout';
 import StatsBanner from '@/components/StatsBanner';
@@ -13,6 +13,7 @@ import { provinces } from '@/data/location';
 
 export default function HomePage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const stories = useAppStore((s) => s.stories);
   const storytellers = useAppStore((s) => s.storytellers);
   const categories = useAppStore((s) => s.categories);
@@ -28,6 +29,15 @@ export default function HomePage() {
     categoryIds: [],
     tagIds: [],
   });
+
+  useEffect(() => {
+    if (searchParams.get('tab') === 'categories') {
+      const el = document.getElementById('categories-section');
+      if (el) {
+        setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+      }
+    }
+  }, [searchParams]);
 
   const approvedStories = useMemo(() => getApprovedStories(), [getApprovedStories]);
   const ranking = useMemo(() => getContributorRanking(), [getContributorRanking]);
@@ -59,7 +69,7 @@ export default function HomePage() {
       provinceId: filterParams.provinceId,
       cityId: filterParams.cityId,
       districtId: filterParams.districtId,
-      categoryId: filterParams.categoryIds[0],
+      categoryIds: filterParams.categoryIds.length > 0 ? filterParams.categoryIds : undefined,
       tagIds: filterParams.tagIds.length > 0 ? filterParams.tagIds : undefined,
       status: 'approved',
     }).slice(0, 20);
@@ -71,10 +81,15 @@ export default function HomePage() {
   );
 
   const handleCategoryClick = (cat: Category) => {
-    setFilterParams((prev) => ({
-      ...prev,
-      categoryIds: [cat.id],
-    }));
+    setFilterParams((prev) => {
+      const exists = prev.categoryIds.includes(cat.id);
+      return {
+        ...prev,
+        categoryIds: exists
+          ? prev.categoryIds.filter((id) => id !== cat.id)
+          : [...prev.categoryIds, cat.id],
+      };
+    });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -101,12 +116,12 @@ export default function HomePage() {
         </section>
 
         <section className="animate-scroll-reveal" style={{ animationDelay: '100ms' }}>
-          <StoryFilter onFilterChange={setFilterParams} />
+          <StoryFilter onFilterChange={setFilterParams} externalCategoryIds={filterParams.categoryIds} />
         </section>
 
         <section
+          id="categories-section"
           className="animate-scroll-reveal"
-          style={{ animationDelay: '150ms' }}
         >
           <div className="mb-6 flex items-center justify-between">
             <div>

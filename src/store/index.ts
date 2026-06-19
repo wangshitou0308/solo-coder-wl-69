@@ -89,6 +89,7 @@ interface AppState {
     cityId?: string;
     districtId?: string;
     categoryId?: string;
+    categoryIds?: string[];
     tagIds?: string[];
     storytellerId?: string;
     status?: StoryStatus;
@@ -389,15 +390,18 @@ export const useAppStore = create<AppState>()(
           .stories.filter((s) => s.collectorId === collectorId)
           .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
 
-      searchStories: ({ keyword, provinceId, cityId, districtId, categoryId, tagIds, storytellerId, status = 'approved' as StoryStatus }) => {
+      searchStories: ({ keyword, provinceId, cityId, districtId, categoryId, categoryIds, tagIds, storytellerId, status = 'approved' as StoryStatus }) => {
         const { stories, storytellers, tags, categories } = get();
         const kw = (keyword || '').trim().toLowerCase();
+        const effectiveCategoryIds = categoryIds && categoryIds.length > 0
+          ? categoryIds
+          : categoryId ? [categoryId] : [];
         return stories.filter((s) => {
           if (status && s.status !== status) return false;
           if (provinceId && s.provinceId !== provinceId) return false;
           if (cityId && s.cityId !== cityId) return false;
           if (districtId && s.districtId !== districtId) return false;
-          if (categoryId && s.categoryId !== categoryId) return false;
+          if (effectiveCategoryIds.length > 0 && !effectiveCategoryIds.includes(s.categoryId)) return false;
           if (storytellerId && s.storytellerId !== storytellerId) return false;
           if (tagIds && tagIds.length > 0) {
             const hasAll = tagIds.every((tid) => s.tagIds.includes(tid));

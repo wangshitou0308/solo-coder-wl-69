@@ -24,9 +24,9 @@ interface LayoutProps {
 const navItems = [
   { label: '首页', href: '/', icon: Home },
   { label: '讲述者', href: '/storytellers', icon: Users },
-  { label: '分类浏览', href: '/categories', icon: LayoutGrid },
-  { label: '贡献故事', href: '/contribute', icon: PenSquare },
-  { label: '管理后台', href: '/admin', icon: Settings, requireRole: ['admin'] as UserRole[] },
+  { label: '分类浏览', href: '/?tab=categories', icon: LayoutGrid },
+  { label: '贡献故事', href: '/submit', icon: PenSquare },
+  { label: '管理后台', href: '/admin/review', icon: Settings, requireRole: ['admin'] as UserRole[] },
 ];
 
 const roleOptions: { role: UserRole; label: string; icon: typeof User; color: string }[] = [
@@ -53,7 +53,7 @@ export default function Layout({ children }: LayoutProps) {
 
   return (
     <div className="min-h-screen flex flex-col bg-rice-50 bg-paper-texture">
-      <header className="relative bg-gradient-to-b from-cinnabar-500 via-cinnabar-500 to-cinnabar-600 text-white shadow-chinese-lg overflow-hidden">
+      <header className="relative bg-gradient-to-b from-cinnabar-500 via-cinnabar-500 to-cinnabar-600 text-white shadow-chinese-lg">
         <div className="absolute inset-0 opacity-10 bg-cloud-pattern bg-[length:80px_80px] pointer-events-none" />
         <div className="absolute top-4 left-8 opacity-20">
           <Cloud className="w-16 h-16 text-gold-300" strokeWidth={1.5} />
@@ -103,7 +103,7 @@ export default function Layout({ children }: LayoutProps) {
               })}
             </nav>
 
-            <div className="relative">
+            <div className="relative z-50">
               <button
                 onClick={() => setRoleDropdownOpen(!roleDropdownOpen)}
                 className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/15 hover:bg-white/25 backdrop-blur-sm border border-white/20 transition-all duration-200 group"

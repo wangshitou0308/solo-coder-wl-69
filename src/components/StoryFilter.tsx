@@ -17,6 +17,7 @@ export interface StoryFilterParams {
 
 interface StoryFilterProps {
   onFilterChange: (params: StoryFilterParams) => void;
+  externalCategoryIds?: string[];
 }
 
 const defaultParams: StoryFilterParams = {
@@ -28,10 +29,21 @@ const defaultParams: StoryFilterParams = {
   tagIds: [],
 };
 
-export default function StoryFilter({ onFilterChange }: StoryFilterProps) {
+export default function StoryFilter({ onFilterChange, externalCategoryIds }: StoryFilterProps) {
   const [params, setParams] = useState<StoryFilterParams>(defaultParams);
   const categories = useAppStore((s) => s.categories);
   const allTags = useAppStore((s) => s.tags);
+
+  useEffect(() => {
+    if (externalCategoryIds !== undefined) {
+      setParams((prev) => {
+        const sorted1 = [...prev.categoryIds].sort().join(',');
+        const sorted2 = [...externalCategoryIds].sort().join(',');
+        if (sorted1 === sorted2) return prev;
+        return { ...prev, categoryIds: externalCategoryIds };
+      });
+    }
+  }, [externalCategoryIds]);
 
   const hotTags = useMemo(() => {
     return [...allTags]

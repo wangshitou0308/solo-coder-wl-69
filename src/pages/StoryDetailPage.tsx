@@ -383,8 +383,9 @@ export default function StoryDetailPage() {
           </section>
         </div>
 
-        <div className="lg:col-span-3 space-y-6">
-          <aside className="card p-6 sticky top-6 animate-scroll-reveal" style={{ animationDelay: '150ms' }}>
+        <div className="lg:col-span-3">
+          <div className="sticky top-6 max-h-[calc(100vh-3rem)] overflow-y-auto scrollbar-thin space-y-6">
+          <aside className="card p-6 animate-scroll-reveal" style={{ animationDelay: '150ms' }}>
             {storyteller ? (
               <>
                 <div className="text-center mb-5">
@@ -534,6 +535,7 @@ export default function StoryDetailPage() {
               </div>
             </aside>
           )}
+        </div>
         </div>
       </div>
 
