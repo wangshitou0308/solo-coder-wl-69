@@ -11,6 +11,8 @@ import StorytellerManagePage from '@/pages/StorytellerManagePage';
 import CategoryManagePage from '@/pages/CategoryManagePage';
 import ExportDataPage from '@/pages/ExportDataPage';
 import StatisticsPage from '@/pages/StatisticsPage';
+import FavoritesPage from '@/pages/FavoritesPage';
+import CollectionTasksPage from '@/pages/CollectionTasksPage';
 import { BookOpen } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -40,6 +42,9 @@ export default function App() {
         <Route path="/storytellers" element={<StorytellerListPage />} />
         <Route path="/storyteller/:id" element={<StorytellerDetailPage />} />
         <Route path="/submit" element={<SubmitStoryPage />} />
+        <Route path="/favorites" element={<FavoritesPage />} />
+        <Route path="/tasks" element={<CollectionTasksPage />} />
+        <Route path="/stories/:id/edit" element={<SubmitStoryPage />} />
         <Route path="/contributor/my-stories" element={<MyStoriesPage />} />
         <Route path="/admin/review" element={<ReviewDashboardPage />} />
         <Route path="/admin/manage/tags" element={<TagManagePage />} />

@@ -6,6 +6,7 @@ import StatsBanner from '@/components/StatsBanner';
 import StoryFilter, { StoryFilterParams } from '@/components/StoryFilter';
 import StoryTimeline from '@/components/StoryTimeline';
 import ContributorRanking from '@/components/ContributorRanking';
+import HotStoryRanking from '@/components/HotStoryRanking';
 import { useAppStore } from '@/store';
 import type { Category } from '@/types';
 import { cn } from '@/lib/utils';
@@ -193,6 +194,22 @@ export default function HomePage() {
               </button>
             ))}
           </div>
+        </section>
+
+        <section
+          className="animate-scroll-reveal"
+          style={{ animationDelay: '300ms' }}
+        >
+          <div className="mb-6">
+            <h2 className="section-title flex items-center gap-2">
+              <span className="w-1 h-8 bg-gradient-to-b from-cinnabar-500 to-gold-500 rounded-full" />
+              🔥 热门故事榜
+            </h2>
+            <p className="section-subtitle">
+              基于浏览、点赞、收藏、评论数据的综合热度排名
+            </p>
+          </div>
+          <HotStoryRanking />
         </section>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

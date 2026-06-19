@@ -12,7 +12,7 @@ export interface User {
   updatedAt: string;
 }
 
-export type StoryStatus = 'pending' | 'approved' | 'rejected';
+export type StoryStatus = 'draft' | 'pending' | 'approved' | 'rejected';
 
 export interface Category {
   id: string;
@@ -94,6 +94,7 @@ export interface Story {
   oralYear?: string;
   recordingDate?: string;
   recordingLocation?: string;
+  taskId?: string;
   status: StoryStatus;
   viewCount: number;
   likeCount: number;
@@ -116,4 +117,86 @@ export interface ReviewRecord {
   newStatus: StoryStatus;
   comment: string;
   reviewedAt: string;
+}
+
+export interface Comment {
+  id: string;
+  storyId: string;
+  userId: string;
+  parentId?: string;
+  replyToUserId?: string;
+  content: string;
+  likeCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UserInteraction {
+  id: string;
+  userId: string;
+  storyId: string;
+  type: 'like' | 'collect';
+  createdAt: string;
+}
+
+export interface BrowseHistory {
+  id: string;
+  userId: string;
+  storyId: string;
+  viewedAt: string;
+}
+
+export type TaskStatus = 'open' | 'in_progress' | 'completed' | 'closed';
+export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
+
+export interface CollectionTask {
+  id: string;
+  title: string;
+  description: string;
+  categoryId?: string;
+  provinceId?: string;
+  cityId?: string;
+  districtId?: string;
+  priority: TaskPriority;
+  deadline?: string;
+  targetStoryCount: number;
+  currentStoryCount: number;
+  status: TaskStatus;
+  creatorId: string;
+  claimedBy?: string;
+  claimedAt?: string;
+  requirements: string[];
+  tags: string[];
+  reward?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Badge {
+  id: string;
+  userId: string;
+  type: BadgeType;
+  name: string;
+  description: string;
+  icon: string;
+  level: 1 | 2 | 3;
+  unlockedAt: string;
+  progress?: number;
+  target?: number;
+}
+
+export type BadgeType =
+  | 'story_count'
+  | 'approval_rate'
+  | 'region_coverage'
+  | 'like_count'
+  | 'collect_count'
+  | 'task_completion';
+
+export interface ShareRecord {
+  id: string;
+  userId: string;
+  storyId: string;
+  channel: 'link' | 'copy' | 'other';
+  createdAt: string;
 }

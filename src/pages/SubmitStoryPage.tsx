@@ -1,5 +1,5 @@
-import { useState, useMemo, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useMemo, useRef, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   FileText,
   Plus,
@@ -20,13 +20,14 @@ import {
   X,
   Info,
   ListPlus,
+  ArrowLeft,
 } from 'lucide-react';
 import Layout from '@/components/Layout';
 import RoleGate from '@/components/RoleGate';
 import AudioRecorder from '@/components/AudioRecorder';
 import TagInput from '@/components/TagInput';
 import { useAppStore } from '@/store';
-import type { Tag, Storyteller, StoryParagraph, DialectNote, Story } from '@/types';
+import type { Tag, Storyteller, StoryParagraph, DialectNote, Story, CollectionTask } from '@/types';
 import { provinces } from '@/data/location';
 import { cn } from '@/lib/utils';
 
@@ -78,20 +79,44 @@ const getInitialParagraphs = (): TempParagraph[] => [
   { id: genTempId(), order: 2, content: '', startTime: '60', dialectNotes: [] },
 ];
 
+const priorityLabel: Record<CollectionTask['priority'], string> = {
+  low: '低',
+  medium: '中',
+  high: '高',
+  urgent: '紧急',
+};
+
+const priorityColor: Record<CollectionTask['priority'], string> = {
+  low: 'bg-ink-100 text-ink-600',
+  medium: 'bg-gold-100 text-gold-700',
+  high: 'bg-cinnabar-100 text-cinnabar-700',
+  urgent: 'bg-red-100 text-red-700',
+};
+
 function SubmitStoryContent() {
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
   const categories = useAppStore((s) => s.categories);
   const allTags = useAppStore((s) => s.tags);
   const storytellers = useAppStore((s) => s.storytellers);
+  const currentUser = useAppStore((s) => s.currentUser);
+  const collectionTasks = useAppStore((s) => s.collectionTasks);
   const addStory = useAppStore((s) => s.addStory);
+  const updateStory = useAppStore((s) => s.updateStory);
+  const getStoryById = useAppStore((s) => s.getStoryById);
+  const updateStoryStatus = useAppStore((s) => s.updateStoryStatus);
   const addStoryteller = useAppStore((s) => s.addStoryteller);
   const addTagFn = useAppStore((s) => s.addTag);
+  const claimTask = useAppStore((s) => s.claimTask);
 
   const [activeSection, setActiveSection] = useState<string>('basic');
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const toastTimerRef = useRef<number | null>(null);
+  const [draftSaved, setDraftSaved] = useState(false);
+  const [selectedTaskId, setSelectedTaskId] = useState<string>('');
+  const [rejectReason, setRejectReason] = useState<string>('');
 
   const [title, setTitle] = useState('');
   const [subtitle, setSubtitle] = useState('');
@@ -125,6 +150,95 @@ function SubmitStoryContent() {
     districtId: '',
     bio: '',
   });
+
+  const claimableTasks = useMemo(
+    () =>
+      collectionTasks.filter(
+        (t) => t.status === 'open' || (t.status === 'in_progress' && t.claimedBy === currentUser?.id)
+      ),
+    [collectionTasks, currentUser]
+  );
+
+  const selectedTask = useMemo(
+    () => claimableTasks.find((t) => t.id === selectedTaskId),
+    [claimableTasks, selectedTaskId]
+  );
+
+  useEffect(() => {
+    if (!id) return;
+    const story = getStoryById(id);
+    if (!story) return;
+
+    setTitle(story.title || '');
+    setSubtitle(story.subtitle || '');
+    setCategoryId(story.categoryId || '');
+    setSummary(story.summary || '');
+    setSourceType(story.sourceType || 'interview');
+    setRecordingDate(story.recordingDate || new Date().toISOString().split('T')[0]);
+    setRecordingLocation(story.recordingLocation || '');
+    setProvinceId(story.provinceId || '');
+    setCityId(story.cityId || '');
+    setDistrictId(story.districtId || '');
+    setOralYear(story.oralYear || '');
+    setKeywords(story.keywords || []);
+    setSelectedTaskId(story.taskId || '');
+
+    if (story.paragraphs && story.paragraphs.length > 0) {
+      const paraDialectMap: Record<string, TempDialectNote[]> = {};
+      (story.dialectNotes || []).forEach((dn) => {
+        if (!paraDialectMap[dn.paragraphId]) paraDialectMap[dn.paragraphId] = [];
+        paraDialectMap[dn.paragraphId].push({
+          id: dn.id,
+          word: dn.word,
+          pronunciation: dn.pronunciation || '',
+          meaning: dn.meaning,
+          example: dn.example || '',
+          region: dn.region || '',
+        });
+      });
+      setParagraphs(
+        story.paragraphs.map((p, idx) => ({
+          id: p.id,
+          order: idx,
+          content: p.content,
+          startTime: String(idx * 30),
+          dialectNotes: paraDialectMap[p.id] || [],
+        }))
+      );
+    }
+
+    if (story.tagIds && story.tagIds.length > 0) {
+      const tags = story.tagIds
+        .map((tid) => allTags.find((t) => t.id === tid))
+        .filter(Boolean) as Tag[];
+      setSelectedTagList(tags);
+    }
+
+    if (story.storytellerId) {
+      const st = storytellers.find((s) => s.id === story.storytellerId);
+      if (st) {
+        setStorytellerData({
+          mode: 'select',
+          selectedId: st.id,
+          searchKeyword: '',
+          name: st.name,
+          gender: st.gender,
+          age: String(st.age),
+          occupation: st.occupation || '',
+          specialties: st.specialties.join('，'),
+          phone: st.contactPhone || '',
+          provinceId: st.provinceId || '',
+          cityId: st.cityId || '',
+          districtId: st.districtId || '',
+          bio: st.bio,
+        });
+      }
+    }
+
+    if (story.status === 'rejected' && story.reviewComment) {
+      setRejectReason(story.reviewComment);
+    }
+  }, [id, getStoryById, allTags, storytellers]);
 
   const selectedProvince = useMemo(() => provinces.find((p) => p.id === provinceId), [provinceId]);
   const selectedCity = useMemo(
@@ -267,20 +381,141 @@ function SubmitStoryContent() {
     setSelectedTagList((prev) => prev.filter((t) => t.id !== tagId));
   };
 
+  const buildStoryData = () => {
+    let finalStorytellerId = storytellerData.selectedId;
+    if (storytellerData.mode === 'new') {
+      const newSt = addStoryteller({
+        name: storytellerData.name.trim(),
+        gender: storytellerData.gender,
+        age: parseInt(storytellerData.age || '60', 10) || 60,
+        occupation: storytellerData.occupation.trim() || undefined,
+        specialties: storytellerData.specialties
+          .split(/[,，、;；]/)
+          .map((s) => s.trim())
+          .filter(Boolean),
+        yearsOfExperience: 20,
+        bio: storytellerData.bio.trim() || `${storytellerData.name}的故事讲述记录。`,
+        contactPhone: storytellerData.phone.trim() || undefined,
+        provinceId: storytellerData.provinceId || undefined,
+        cityId: storytellerData.cityId || undefined,
+        districtId: storytellerData.districtId || undefined,
+        address: undefined,
+        ethnicity: undefined,
+        education: undefined,
+        avatar: undefined,
+      });
+      finalStorytellerId = newSt.id;
+    }
+
+    const validParagraphs = paragraphs
+      .filter((p) => p.content.trim())
+      .sort((a, b) => a.order - b.order)
+      .map((p, idx): StoryParagraph => ({
+        id: genTempId(),
+        order: idx,
+        content: p.content.trim(),
+        audioUrl: undefined,
+        videoUrl: undefined,
+      }));
+
+    const finalDialectNotes: DialectNote[] = [];
+    paragraphs
+      .filter((p) => p.content.trim())
+      .sort((a, b) => a.order - b.order)
+      .forEach((p, idx) => {
+        const paraId = validParagraphs[idx].id;
+        p.dialectNotes
+          .filter((n) => n.word.trim() && n.meaning.trim())
+          .forEach((n) => {
+            finalDialectNotes.push({
+              id: genTempId(),
+              word: n.word.trim(),
+              pronunciation: n.pronunciation.trim() || undefined,
+              meaning: n.meaning.trim(),
+              example: n.example.trim() || undefined,
+              region: n.region.trim() || undefined,
+              paragraphId: paraId,
+            });
+          });
+      });
+
+    return {
+      title: title.trim(),
+      subtitle: subtitle.trim() || undefined,
+      categoryId,
+      storytellerId: finalStorytellerId,
+      collectorId: '',
+      provinceId: provinceId || undefined,
+      cityId: cityId || undefined,
+      districtId: districtId || undefined,
+      coverImage: undefined,
+      summary: summary.trim(),
+      paragraphs: validParagraphs,
+      dialectNotes: finalDialectNotes,
+      tagIds: selectedTagList.map((t) => t.id),
+      keywords,
+      sourceType,
+      oralYear: oralYear.trim() || undefined,
+      recordingDate,
+      recordingLocation: recordingLocation.trim() || undefined,
+      taskId: selectedTaskId || undefined,
+    };
+  };
+
   const validateForm = (): string | null => {
+    const isEdit = !!id;
     if (!title.trim()) return '请填写故事标题';
-    if (!categoryId) return '请选择故事分类';
-    if (storytellerData.mode === 'select' && !storytellerData.selectedId) {
-      return '请选择或新增讲述者';
+    if (!isEdit) {
+      if (!categoryId) return '请选择故事分类';
+      if (storytellerData.mode === 'select' && !storytellerData.selectedId) {
+        return '请选择或新增讲述者';
+      }
+      if (storytellerData.mode === 'new' && !storytellerData.name.trim()) {
+        return '请填写新讲述者的姓名';
+      }
+      if (!recordingDate) return '请选择采集日期';
+      if (!summary.trim()) return '请填写故事摘要';
+      const validParagraphs = paragraphs.filter((p) => p.content.trim());
+      if (validParagraphs.length === 0) return '请至少填写一段转录稿内容';
     }
-    if (storytellerData.mode === 'new' && !storytellerData.name.trim()) {
-      return '请填写新讲述者的姓名';
-    }
-    if (!recordingDate) return '请选择采集日期';
-    if (!summary.trim()) return '请填写故事摘要';
-    const validParagraphs = paragraphs.filter((p) => p.content.trim());
-    if (validParagraphs.length === 0) return '请至少填写一段转录稿内容';
     return null;
+  };
+
+  const handleSaveDraft = () => {
+    if (!title.trim()) {
+      showToast('error', '请至少填写故事标题');
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      const storyData = buildStoryData();
+
+      if (selectedTaskId && currentUser) {
+        const task = collectionTasks.find((t) => t.id === selectedTaskId);
+        if (task && task.status === 'open') {
+          claimTask(selectedTaskId, currentUser.id);
+        }
+      }
+
+      if (id) {
+        updateStory(id, storyData);
+        updateStoryStatus(id, 'draft');
+      } else {
+        addStory({ ...storyData, status: 'draft' });
+      }
+
+      showToast('success', '草稿保存成功！');
+      setDraftSaved(true);
+      window.setTimeout(() => {
+        navigate('/contributor/my-stories');
+      }, 2000);
+    } catch (err) {
+      const e = err as Error;
+      showToast('error', `保存失败：${e.message || '未知错误'}`);
+      setSubmitting(false);
+    }
   };
 
   const handleSubmit = () => {
@@ -293,83 +528,21 @@ function SubmitStoryContent() {
     setSubmitting(true);
 
     try {
-      let finalStorytellerId = storytellerData.selectedId;
-      if (storytellerData.mode === 'new') {
-        const newSt = addStoryteller({
-          name: storytellerData.name.trim(),
-          gender: storytellerData.gender,
-          age: parseInt(storytellerData.age || '60', 10) || 60,
-          occupation: storytellerData.occupation.trim() || undefined,
-          specialties: storytellerData.specialties
-            .split(/[,，、;；]/)
-            .map((s) => s.trim())
-            .filter(Boolean),
-          yearsOfExperience: 20,
-          bio: storytellerData.bio.trim() || `${storytellerData.name}的故事讲述记录。`,
-          contactPhone: storytellerData.phone.trim() || undefined,
-          provinceId: storytellerData.provinceId || undefined,
-          cityId: storytellerData.cityId || undefined,
-          districtId: storytellerData.districtId || undefined,
-          address: undefined,
-          ethnicity: undefined,
-          education: undefined,
-          avatar: undefined,
-        });
-        finalStorytellerId = newSt.id;
+      const storyData = buildStoryData();
+
+      if (selectedTaskId && currentUser) {
+        const task = collectionTasks.find((t) => t.id === selectedTaskId);
+        if (task && task.status === 'open') {
+          claimTask(selectedTaskId, currentUser.id);
+        }
       }
 
-      const validParagraphs = paragraphs
-        .filter((p) => p.content.trim())
-        .sort((a, b) => a.order - b.order)
-        .map((p, idx): StoryParagraph => ({
-          id: genTempId(),
-          order: idx,
-          content: p.content.trim(),
-          audioUrl: undefined,
-          videoUrl: undefined,
-        }));
-
-      const finalDialectNotes: DialectNote[] = [];
-      paragraphs
-        .filter((p) => p.content.trim())
-        .sort((a, b) => a.order - b.order)
-        .forEach((p, idx) => {
-          const paraId = validParagraphs[idx].id;
-          p.dialectNotes
-            .filter((n) => n.word.trim() && n.meaning.trim())
-            .forEach((n) => {
-              finalDialectNotes.push({
-                id: genTempId(),
-                word: n.word.trim(),
-                pronunciation: n.pronunciation.trim() || undefined,
-                meaning: n.meaning.trim(),
-                example: n.example.trim() || undefined,
-                region: n.region.trim() || undefined,
-                paragraphId: paraId,
-              });
-            });
-        });
-
-      addStory({
-        title: title.trim(),
-        subtitle: subtitle.trim() || undefined,
-        categoryId,
-        storytellerId: finalStorytellerId,
-        collectorId: '',
-        provinceId: provinceId || undefined,
-        cityId: cityId || undefined,
-        districtId: districtId || undefined,
-        coverImage: undefined,
-        summary: summary.trim(),
-        paragraphs: validParagraphs,
-        dialectNotes: finalDialectNotes,
-        tagIds: selectedTagList.map((t) => t.id),
-        keywords,
-        sourceType,
-        oralYear: oralYear.trim() || undefined,
-        recordingDate,
-        recordingLocation: recordingLocation.trim() || undefined,
-      });
+      if (id) {
+        updateStory(id, storyData);
+        updateStoryStatus(id, 'pending');
+      } else {
+        addStory(storyData);
+      }
 
       showToast('success', '故事提交成功！正在跳转到故事列表...');
       window.setTimeout(() => {
@@ -446,13 +619,25 @@ function SubmitStoryContent() {
           <div className="w-1.5 h-10 bg-gradient-to-b from-cinnabar-500 to-gold-500 rounded-full" />
           <div>
             <h1 className="font-serif text-3xl md:text-4xl font-bold text-ink-900">
-              贡献故事
+              {id ? '编辑故事' : '贡献故事'}
             </h1>
             <p className="text-ink-500 mt-1">
               请认真填写以下信息，您的贡献将被永久保存，成为文化传承的一部分
             </p>
           </div>
         </div>
+
+        {rejectReason && (
+          <div className="mt-4 p-4 md:p-5 rounded-2xl bg-cinnabar-50 border border-cinnabar-200">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-cinnabar-700 shrink-0 mt-0.5" strokeWidth={2} />
+              <div className="flex-1">
+                <p className="text-cinnabar-800 font-semibold mb-1">稿件被驳回，请修改后重新提交</p>
+                <p className="text-cinnabar-700 text-sm">{rejectReason}</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="mt-6 p-4 md:p-5 rounded-2xl bg-gradient-to-r from-gold-50 via-cinnabar-50/50 to-gold-50 border border-gold-200">
           <div className="flex items-start gap-3">
@@ -467,6 +652,12 @@ function SubmitStoryContent() {
             </div>
           </div>
         </div>
+
+        {draftSaved && (
+          <div className="mt-4 p-3 rounded-xl bg-jade-50 border border-jade-200 text-jade-700">
+            ✓ 草稿已保存，可稍后继续编辑
+          </div>
+        )}
       </div>
 
       <section className="animate-scroll-reveal" style={{ animationDelay: '50ms' }}>
@@ -528,6 +719,61 @@ function SubmitStoryContent() {
                   </select>
                   <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-ink-400 pointer-events-none" />
                 </div>
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="label-base">关联采集任务（可选）</label>
+                {claimableTasks.length === 0 ? (
+                  <div className="mt-2 p-4 rounded-xl bg-rice-50 border border-rice-200 text-center text-ink-400 text-sm">
+                    暂无待认领任务，可先投稿
+                  </div>
+                ) : (
+                  <>
+                    <div className="relative">
+                      <select
+                        value={selectedTaskId}
+                        onChange={(e) => setSelectedTaskId(e.target.value)}
+                        className="input-base appearance-none pr-12 h-12"
+                      >
+                        <option value="">不关联任务，自由投稿</option>
+                        {claimableTasks.map((t) => (
+                          <option key={t.id} value={t.id}>
+                            【{priorityLabel[t.priority]}】{t.title}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-ink-400 pointer-events-none" />
+                    </div>
+                    {selectedTask && (
+                      <div className="mt-3 p-4 rounded-xl bg-gold-50 border border-gold-200">
+                        <div className="flex items-start gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="font-semibold text-ink-800 truncate">
+                                {selectedTask.title}
+                              </span>
+                              <span className={cn(
+                                'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium shrink-0',
+                                priorityColor[selectedTask.priority]
+                              )}>
+                                {priorityLabel[selectedTask.priority]}优先级
+                              </span>
+                            </div>
+                            <p className="text-sm text-ink-600 line-clamp-2">
+                              {selectedTask.description}
+                            </p>
+                            <div className="mt-2 flex flex-wrap gap-2 text-xs text-ink-500">
+                              {selectedTask.deadline && (
+                                <span>截止：{selectedTask.deadline.slice(0, 10)}</span>
+                              )}
+                              <span>进度：{selectedTask.currentStoryCount}/{selectedTask.targetStoryCount}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             </div>
 
@@ -1269,20 +1515,31 @@ function SubmitStoryContent() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex-1 min-w-0">
               <h3 className="font-serif text-2xl font-bold text-ink-900 mb-2">
-                准备好提交了吗？
+                {id ? '准备好重新提交了吗？' : '准备好提交了吗？'}
               </h3>
               <p className="text-sm text-ink-500">
                 提交后故事将进入审核队列，审核通过后将公开发布在平台上，成为永久档案。
               </p>
             </div>
-            <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0">
+            <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0 w-full sm:w-auto">
               <button
                 type="button"
-                onClick={() => navigate('/')}
+                onClick={handleSaveDraft}
+                disabled={submitting}
                 className="btn-secondary w-full sm:w-auto"
               >
-                暂存草稿
+                💾 保存草稿
               </button>
+              {id && (
+                <button
+                  type="button"
+                  onClick={() => navigate(-1)}
+                  className="btn-ghost w-full sm:w-auto"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  取消
+                </button>
+              )}
               <button
                 type="button"
                 onClick={handleSubmit}

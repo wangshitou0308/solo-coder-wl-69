@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Calendar, MapPin, User } from 'lucide-react';
+import { Bookmark, Calendar, Eye, Heart, MapPin, MessageCircle, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Story, StoryStatus } from '../types';
 import type { Province } from '../data/location';
@@ -23,6 +23,10 @@ const statusConfig: Record<StoryStatus, { label: string; className: string }> = 
     label: '已驳回',
     className: 'bg-cinnabar-100 text-cinnabar-700 border-cinnabar-300',
   },
+  draft: {
+    label: '草稿',
+    className: 'bg-ink-100 text-ink-600 border-ink-200',
+  },
 };
 
 function getLocationName(provinceId?: string, cityId?: string): string {
@@ -39,6 +43,11 @@ export default function StoryCard({ story }: StoryCardProps) {
   const categories = useAppStore((s) => s.categories);
   const tags = useAppStore((s) => s.tags);
   const storytellers = useAppStore((s) => s.storytellers);
+  const currentUser = useAppStore((s) => s.currentUser);
+  const hasLiked = useAppStore((s) => s.hasLiked);
+  const hasCollected = useAppStore((s) => s.hasCollected);
+  const toggleLike = useAppStore((s) => s.toggleLike);
+  const toggleCollect = useAppStore((s) => s.toggleCollect);
 
   const category = categories.find((c) => c.id === story.categoryId);
   const storyteller = storytellers.find((st) => st.id === story.storytellerId);
@@ -51,8 +60,25 @@ export default function StoryCard({ story }: StoryCardProps) {
   const summary = story.summary.length > 100 ? story.summary.slice(0, 100) + '…' : story.summary;
   const recordDate = story.recordingDate ? new Date(story.recordingDate).toLocaleDateString('zh-CN') : '';
 
+  const liked = currentUser ? hasLiked(currentUser.id, story.id) : false;
+  const collected = currentUser ? hasCollected(currentUser.id, story.id) : false;
+
   const handleClick = () => {
     navigate(`/story/${story.id}`);
+  };
+
+  const handleToggleLike = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (currentUser) {
+      toggleLike(currentUser.id, story.id);
+    }
+  };
+
+  const handleToggleCollect = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (currentUser) {
+      toggleCollect(currentUser.id, story.id);
+    }
   };
 
   return (
@@ -140,6 +166,40 @@ export default function StoryCard({ story }: StoryCardProps) {
             <span>采集于 {recordDate}</span>
           </div>
         )}
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-rice-200 pt-3 text-xs text-ink-500">
+        <span className="inline-flex items-center gap-1">
+          <Eye size={14} />
+          {story.viewCount}
+        </span>
+
+        <button
+          onClick={handleToggleLike}
+          className={cn(
+            'inline-flex items-center gap-1 transition-colors hover:text-cinnabar-600',
+            liked ? 'text-cinnabar-600' : ''
+          )}
+        >
+          <Heart size={14} fill={liked ? 'currentColor' : 'none'} />
+          {story.likeCount}
+        </button>
+
+        <button
+          onClick={handleToggleCollect}
+          className={cn(
+            'inline-flex items-center gap-1 transition-colors hover:text-gold-600',
+            collected ? 'text-gold-600' : ''
+          )}
+        >
+          <Bookmark size={14} fill={collected ? 'currentColor' : 'none'} />
+          {story.collectCount}
+        </button>
+
+        <span className="inline-flex items-center gap-1">
+          <MessageCircle size={14} />
+          {story.commentCount}
+        </span>
       </div>
     </article>
   );

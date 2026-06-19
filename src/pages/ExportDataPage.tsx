@@ -402,6 +402,7 @@ function buildCSV(stories: Story[], categories: any[], storytellers: any[], tags
     pending: '待审核',
     approved: '已通过',
     rejected: '已驳回',
+    draft: '草稿',
   };
 
   const rows = stories.map((s) => {
@@ -501,6 +502,7 @@ function ExportDataContent() {
     pending: '待审核',
     approved: '已通过',
     rejected: '已驳回',
+    draft: '草稿',
   };
 
   return (

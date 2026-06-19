@@ -5,6 +5,8 @@ import {
   Users,
   LayoutGrid,
   PenSquare,
+  Bookmark,
+  ClipboardList,
   Settings,
   ChevronDown,
   BookOpen,
@@ -26,6 +28,8 @@ const navItems = [
   { label: '讲述者', href: '/storytellers', icon: Users },
   { label: '分类浏览', href: '/?tab=categories', icon: LayoutGrid },
   { label: '贡献故事', href: '/submit', icon: PenSquare },
+  { label: '我的收藏', href: '/favorites', icon: Bookmark },
+  { label: '采集任务', href: '/tasks', icon: ClipboardList },
   { label: '管理后台', href: '/admin/review', icon: Settings, requireRole: ['admin'] as UserRole[] },
 ];
 
@@ -240,7 +244,7 @@ export default function Layout({ children }: LayoutProps) {
                 快速导航
               </h4>
               <ul className="space-y-2">
-                {visibleNavItems.slice(0, 4).map((item) => (
+                {visibleNavItems.slice(0, 6).map((item) => (
                   <li key={item.href}>
                     <Link
                       to={item.href}

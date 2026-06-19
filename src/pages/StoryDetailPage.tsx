@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   Calendar,
@@ -10,10 +10,17 @@ import {
   BadgeCheck,
   Briefcase,
   Sparkles,
+  Heart,
+  Bookmark,
+  MessageCircle,
+  Share2,
+  Eye,
 } from 'lucide-react';
 import Layout from '@/components/Layout';
 import AudioPlayer, { AudioParagraph } from '@/components/AudioPlayer';
 import StoryCard from '@/components/StoryCard';
+import CommentSection from '@/components/CommentSection';
+import SharePanel from '@/components/SharePanel';
 import { useAppStore } from '@/store';
 import type { DialectNote, StoryParagraph } from '@/types';
 import { cn } from '@/lib/utils';
@@ -73,11 +80,19 @@ export default function StoryDetailPage() {
   const categories = useAppStore((s) => s.categories);
   const tags = useAppStore((s) => s.tags);
   const getApprovedStories = useAppStore((s) => s.getApprovedStories);
+  const currentUser = useAppStore((s) => s.currentUser);
+  const toggleLike = useAppStore((s) => s.toggleLike);
+  const toggleCollect = useAppStore((s) => s.toggleCollect);
+  const hasLiked = useAppStore((s) => s.hasLiked);
+  const hasCollected = useAppStore((s) => s.hasCollected);
+  const incrementViewCount = useAppStore((s) => s.incrementViewCount);
+  const addBrowseHistory = useAppStore((s) => s.addBrowseHistory);
 
   const story = id ? getStoryById(id) : undefined;
   const [activeParagraphId, setActiveParagraphId] = useState<string | null>(null);
   const [hoveredNote, setHoveredNote] = useState<DialectNote | null>(null);
   const [hoveredNoteEl, setHoveredNoteEl] = useState<{ x: number; y: number } | null>(null);
+  const [sharePanelOpen, setSharePanelOpen] = useState(false);
 
   const storyteller = story ? getStorytellerById(story.storytellerId) : undefined;
   const category = story ? categories.find((c) => c.id === story.categoryId) : undefined;
@@ -119,6 +134,13 @@ export default function StoryDetailPage() {
     }
     return map;
   }, [story]);
+
+  useEffect(() => {
+    if (story && currentUser) {
+      incrementViewCount(story.id);
+      addBrowseHistory(currentUser.id, story.id);
+    }
+  }, []);
 
   if (!story) {
     return (
@@ -280,6 +302,59 @@ export default function StoryDetailPage() {
                   {kw}
                 </span>
               ))}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 mt-6 p-4 rounded-2xl bg-gradient-to-r from-cinnabar-50/80 to-gold-50/80 border border-cinnabar-100">
+              <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white/80 text-ink-600">
+                <Eye className="w-4 h-4 text-cinnabar-600" />
+                <span className="font-medium">{story.viewCount}</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => currentUser && toggleLike(currentUser.id, story.id)}
+                className={cn(
+                  'inline-flex items-center gap-1.5 px-4 py-2 rounded-xl transition-all duration-200 hover:shadow-sm',
+                  currentUser && hasLiked(currentUser.id, story.id)
+                    ? 'bg-white text-cinnabar-600 hover:bg-cinnabar-50'
+                    : 'bg-white/80 text-ink-600 hover:bg-white hover:text-cinnabar-600'
+                )}
+              >
+                <Heart
+                  className={cn('w-4 h-4', currentUser && hasLiked(currentUser.id, story.id) && 'fill-current')}
+                />
+                <span className="font-medium">{story.likeCount}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => currentUser && toggleCollect(currentUser.id, story.id)}
+                className={cn(
+                  'inline-flex items-center gap-1.5 px-4 py-2 rounded-xl transition-all duration-200 hover:shadow-sm',
+                  currentUser && hasCollected(currentUser.id, story.id)
+                    ? 'bg-white text-gold-600 hover:bg-gold-50'
+                    : 'bg-white/80 text-ink-600 hover:bg-white hover:text-gold-600'
+                )}
+              >
+                <Bookmark
+                  className={cn('w-4 h-4', currentUser && hasCollected(currentUser.id, story.id) && 'fill-current text-gold-600')}
+                />
+                <span className="font-medium">{story.collectCount}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => document.getElementById('comments-section')?.scrollIntoView({ behavior: 'smooth' })}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white/80 text-ink-600 hover:bg-white hover:text-cinnabar-600 transition-all duration-200 hover:shadow-sm"
+              >
+                <MessageCircle className="w-4 h-4" />
+                <span className="font-medium">{story.commentCount}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setSharePanelOpen(true)}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white/80 text-ink-600 hover:bg-white hover:text-cinnabar-600 transition-all duration-200 hover:shadow-sm"
+              >
+                <Share2 className="w-4 h-4" />
+                <span className="font-medium">分享</span>
+              </button>
             </div>
           </section>
 
@@ -538,6 +613,20 @@ export default function StoryDetailPage() {
         </div>
         </div>
       </div>
+
+      <section
+        id="comments-section"
+        className="animate-scroll-reveal mt-8"
+        style={{ animationDelay: '250ms' }}
+      >
+        <CommentSection storyId={story.id} />
+      </section>
+
+      <SharePanel
+        storyId={story.id}
+        open={sharePanelOpen}
+        onClose={() => setSharePanelOpen(false)}
+      />
 
       {hoveredNote && hoveredNoteEl && (
         <div
